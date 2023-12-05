@@ -16,32 +16,52 @@ function ListOfTest({ setClicked, clicked }) {
   const [semester, setSemester] = useState("");
   const [exam, setExam] = useState("");
   const [sectionSubjectName, setSectionSubjectName] = useState([]);
+  const [filteredSections, setFilteredSections] = useState([]);
   const [sorted, setSorted] = useState(false);
   const [publishedTest, setPublishedTest] = useState([]);
   const [sectionUid, setSectionUid] = useState("");
   const [publishing, setPublishing] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState('');
 
+
+  
   const add = async () => {
     const New = {
       TestName: TestName,
-      Subject: Subject,
+      Subject: selectedSubject,
       UidTest: uid,
       SectionName: section,
       UidProf: TUPCID,
       Semester: semester + ":" + exam,
       Uid_section: sectionUid,
     };
-    if (
-      TestName != "" &&
-      Subject != "" &&
-      section != "" &&
-      uid != "" &&
-      semester != "" &&
-      exam != ""
-    ) {
+
+    console.log("TestName:", TestName);
+console.log("Subject:", selectedSubject);
+console.log("section:", section);
+console.log("uid:", uid);
+console.log("semester:", semester);
+console.log("exam:", exam);
+
+if (
+  TestName !== "" &&
+  selectedSubject!== "" && // Use selectedSubject here
+  section !== "" &&
+  uid !== "" &&
+  semester !== "" &&
+  exam !== ""
+) {
       setMessage("");
       try {
-        const response = await axios.get(`http://localhost:3001/CheckTestName?TestName=${TestName}`)
+        const response = await axios.get(`http://localhost:3001/CheckTestName`, {
+          params: {
+            TestName: TestName,
+            Subject: selectedSubject,
+            SectionName: section,
+            Semester: semester + ":" + exam,
+           
+          }
+        });
         console.log(response.data)
         if (response.status === 200) {
           const response1 = await axios.post(
@@ -50,12 +70,17 @@ function ListOfTest({ setClicked, clicked }) {
           );
           if (response1.status === 200) {
             fetchingTestList();
+            setSemester("");
+            setExam("");
           }
-          setSemester("");
+        
           setTestName("");
           setSubject("");
           setSection("");
           setUid("");
+          setSelectedSubject(''); // Reset the selected subject
+          setFilteredSections([]); 
+          // Reset the filtered sections
         }
       } catch (err) {
         setMessage(err.response.data.message);
@@ -186,9 +211,28 @@ function ListOfTest({ setClicked, clicked }) {
   };
 
   const sectionName = (selectedSection) => {
-    setSection(selectedSection.split(",")[0]);
-    setSectionUid(selectedSection.split(",")[1]);
+    const [sectionName, sectionUid] = selectedSection.split(","); 
+    setSection(sectionName);
+    setSectionUid(sectionUid);
   };
+  
+  
+
+  const handleSubjectChange = (selectedSubject) => {
+    // Filter sections based on the selected subject
+    const sectionsForSubject = sectionSubjectName.filter(
+      (section) => section.Subject === selectedSubject
+    );
+    setFilteredSections(sectionsForSubject);
+  
+    // Update only the selectedSubject state here
+    setSelectedSubject(selectedSubject);
+  };
+  
+  
+
+
+  
   return (
     <main className="w-100 min-vh-100">
       <section className="contatiner col-12 text-sm-start text-center d-flex flex-column align-items-start p-2">
@@ -269,67 +313,72 @@ function ListOfTest({ setClicked, clicked }) {
                       type="text"
                       className="px-3 py-1 rounded border border-dark col-12"
                     />
-                    <p className="m-0">SUBJECT</p>
-                    <select
-                      onChange={(e) => setSubject(e.target.value)}
-                      className="px-3 py-1 rounded border border-dark col-12"
-                    >
-                      <option selected hidden disabled>
-                        Choose...
-                      </option>
-                      {sectionSubjectName.map((subject, index) => (
-                        <option value={subject.Subject} key={index}>
-                          {subject.Subject}
-                        </option>
-                      ))}
-                    </select>
-                    <label htmlFor="#SectionName">Section Name</label>
-                    <div className="row col-12 m-0 gap-sm-4 gap-3">
-                      <select
-                        name="SectionName"
-                        id="SectionName"
-                        className="py-1 px-3 rounded border border-dark"
-                        onChange={(e) => sectionName(e.target.value)}
-                      >
-                        <option selected hidden disabled>
-                          Choose...
-                        </option>
-                        {sectionSubjectName.map((sections, index) => (
-                          <option
-                            value={[
-                              sections.Section_Name,
-                              sections.Uid_Section,
-                            ]}
-                            key={index}
-                          >
-                            {sections.Section_Name} {sections.Uid_Section}
-                          </option>
-                        ))}
-                      </select>
+                     <p className="m-0">SUBJECT</p>
+                     <select
+  onChange={(e) => handleSubjectChange(e.target.value)}
+  className="px-3 py-1 rounded border border-dark col-12"
+  value={selectedSubject} // Ensure the value is set to selectedSubject
+>
+    <option value="" disabled>
+      Choose...
+    </option>
+    {sectionSubjectName.map((subject, index) => (
+      <option value={subject.Subject} key={index}>
+        {subject.Subject}
+      </option>
+    ))}
+  </select>
+
+  <label htmlFor="#SectionName">SECTION NAME</label>
+  <div className="row col-12 m-0 gap-sm-4 gap-3">
+  <select
+  name="SectionName"
+  id="SectionName"
+  className="py-1 px-3 rounded border border-dark"
+  onChange={(e) => sectionName(e.target.value)}
+  value={section}
+>
+  <option value="" disabled>
+    {selectedSubject ? 'Choose...' : 'Select a subject first'}
+  </option>
+  {filteredSections.map((section, index) => (
+    <option
+      value={[section.Section_Name, section.Uid_Section]}
+      key={index}
+    >
+      {section.Section_Name}, {section.Uid_Section}
+    </option>
+  ))}
+</select>
+
+
                     </div>
-                    <p className="m-0">Semester</p>
-                    <select
-                      className="px-3 py-1 border border-dark rounded col-12"
-                      onChange={(e) => setSemester(e.target.value)}
-                    >
-                      <option selected hidden disabled>
-                        Choose...
-                      </option>
-                      <option value="1st Semester">1st Semester</option>
-                      <option value="2nd Semester">2nd Semester</option>
-                    </select>
-                    <p className="m-0">Exam</p>
-                    <select
-                      className="px-3 py-1 border border-dark rounded col-12"
-                      onChange={(e) => setExam(e.target.value)}
-                    >
-                      <option selected hidden disabled>
-                        Choose...
-                      </option>
-                      <option value="Prelim">Prelim</option>
-                      <option value="Midterm">Midterm</option>
-                      <option value="Final">Final</option>
-                    </select>
+                    <p className="m-0">SEMESTER</p>
+<select
+  className="px-3 py-1 border border-dark rounded col-12"
+  onChange={(e) => setSemester(e.target.value)}
+  value={semester || ""}
+>
+  <option value="" disabled>
+    Choose...
+  </option>
+  <option value="1st Semester">1st Semester</option>
+  <option value="2nd Semester">2nd Semester</option>
+</select>
+<p className="m-0">PERIOD</p>
+<select
+  className="px-3 py-1 border border-dark rounded col-12"
+  onChange={(e) => setExam(e.target.value)}
+  value={exam || ""}
+>
+  <option value="" disabled>
+    Choose...
+  </option>
+  <option value="Prelim">Prelim</option>
+  <option value="Midterm">Midterm</option>
+  <option value="Final">Final</option>
+</select>
+
                     <p className="m-0">UID</p>
                     <div className="row m-0 gap-sm-3 gap-2">
                       <input
@@ -358,6 +407,7 @@ function ListOfTest({ setClicked, clicked }) {
                         message === "Required to Fill up" ? "" : "modal"
                       }
                       onClick={add}
+                      
                     >
                       Add
                     </button>

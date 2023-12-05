@@ -76,6 +76,7 @@ export default function TestPaper() {
   };
 
   const handleSaveToDocsAndPDF = () => {
+    const localStorageKey = `testPaperData_${TUPCID}_${sectionname}_${uid}`;
     const savedData = JSON.parse(localStorage.getItem(localStorageKey) || "[]");
 
     generateTestPaperdoc(savedData);
@@ -116,7 +117,7 @@ export default function TestPaper() {
         setFields(JSON.parse(savedData));
         setLoadedFromLocalStorage(true);
       }
-    }, []);
+    }, [localStorageKey]);
 
     // Modified code to save and retrieve fieldTitleNumbers
     const [fieldTitleNumbers, setFieldTitleNumbers] = useState(() => {
@@ -417,10 +418,6 @@ export default function TestPaper() {
   const originalLabels = sourceQuestion.MCOptions.map(option => option.label);
   const shuffledLabels = shuffleArray(originalLabels);
 
-  while (shuffledLabels.every((label, i) => label === originalLabels[i])) {
-    shuffleArray(shuffledLabels);
-  }
-
   const shuffledMCOptions = sourceQuestion.MCOptions.map((option, optionIndex) => ({
     label: option.label,
     text: sourceQuestion.MCOptions.find(originalOption => originalOption.label === shuffledLabels[optionIndex]).text,
@@ -429,7 +426,6 @@ export default function TestPaper() {
   const copiedData = {
     questionType: sourceQuestion.questionType,
     question: sourceQuestion.question,
-    answer: sourceQuestion.answer,
     score: sourceQuestion.score,
     MCOptions: shuffledMCOptions,
     TFOptions: sourceQuestion.TFOptions.map(option => ({ ...option })), // Deep copy TFOptions
@@ -702,9 +698,39 @@ export default function TestPaper() {
     return (
       <div className="d-flex flex-column justify-content-center align-items-center container-sm col-lg-8 col-11 border border-dark rounded py-2">
         <div className="position-fixed bottom-0 end-0 p-3">
+        <button
+            className="btn btn-danger btn-lg me-3"
+            onClick={handleSave}
+            disabled={
+              isSaveButtonDisabled ||
+              scoreDifference !== 0 ||
+              fields.some((f) => !f.question || !f.answer)
+            }
+          >
+            Save All
+          </button>
+         <br/>
           <button className="btn btn-dark btn-lg" onClick={openPresetPage}>
             PRESET
           </button>
+         
+        <div className="d-flex flex-column mt-2">
+          <div className="d-flex gap-2">
+            <input type="checkbox" id="generateWord" />
+            <label>Generate Word</label>
+          </div>
+          <div className="d-flex gap-2">
+            <input type="checkbox" id="generatePDF" />{" "}
+            <label>Generate PDF</label>
+          </div>
+          
+          <button
+            className="btn btn-outline-dark mt-1"
+            onClick={handleSaveToDocsAndPDF}
+          >
+            Download File
+          </button>
+        </div>
         </div>
 
         {fields.map((field, index) => (
@@ -838,6 +864,7 @@ export default function TestPaper() {
                   onChange={(e) =>
                     handleFieldChange(index, {...field, answer: e.target.value,})
                   }
+                  maxLength={13}
                 />
               </div>
             )}
@@ -991,6 +1018,7 @@ export default function TestPaper() {
                               ),
                             })
                           }
+                          maxLength={13}
                         />
                       </div>
                     )}
@@ -1049,36 +1077,9 @@ export default function TestPaper() {
           <button className="btn btn-outline-dark" onClick={addNewField}>
             Add New Type
           </button>
-          <button
-            className="btn btn-outline-dark"
-            onClick={handleSave}
-            disabled={
-              isSaveButtonDisabled ||
-              scoreDifference !== 0 ||
-              fields.some((f) => !f.question || !f.answer)
-            }
-          >
-            Save All
-          </button>
-        </div>
-
-        <div className="d-flex flex-column mt-2">
-          <div className="d-flex gap-2">
-            <input type="checkbox" id="generateWord" />
-            <label>Generate Word</label>
-          </div>
-          <div className="d-flex gap-2">
-            <input type="checkbox" id="generatePDF" />{" "}
-            <label>Generate PDF</label>
-          </div>
           
-          <button
-            className="btn btn-outline-dark mt-1"
-            onClick={handleSaveToDocsAndPDF}
-          >
-            Download File
-          </button>
         </div>
+        
       </div>
     );
   };

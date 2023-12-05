@@ -15,6 +15,16 @@ function Sections({ setClicked, clicked }) {
   const [uid, setUid] = useState("");
   const [message, setMessage] = useState("");
 
+  const initialOption = "Choose..."; // Define initial dropdown option text
+
+  const resetDropdowns = () => {
+    setSection(initialOption);
+    setYear(initialOption);
+    setCourse(initialOption);
+    setSubject("");
+    setUid("");
+  };
+
   const add = async () => {
     const New = {
       UidProf: TUPCID,
@@ -26,11 +36,11 @@ function Sections({ setClicked, clicked }) {
       Year: year,
     };
     if (
-      uid != "" &&
-      section != "" &&
-      subject != "" &&
-      course != "" &&
-      year != ""
+      uid !== "" &&
+      section !== "" &&
+      subject !== "" &&
+      course !== "" &&
+      year !== ""
     ) {
       setMessage("");
       try {
@@ -40,11 +50,7 @@ function Sections({ setClicked, clicked }) {
         );
         if (response.status === 200) {
           fetchingSections();
-          setSection("");
-          setYear("");
-          setCourse("");
-          setSubject("");
-          setUid("");
+          resetDropdowns(); // Reset dropdown values to initial "Choose..." option
         }
       } catch (err) {
         console.error(err);
@@ -69,7 +75,7 @@ function Sections({ setClicked, clicked }) {
     const updatedSections = sectionList.map((section) => {
       if (section.Uid_Section === uid) {
         section.copyClick = !section.copyClick;
-        ClipboardJS.copy(section.Uid_Section)
+        ClipboardJS.copy(section.Uid_Section);
       }
       return section;
     });
@@ -84,7 +90,7 @@ function Sections({ setClicked, clicked }) {
     return () => {
       clearInterval(changings);
     };
-  }, [TUPCID,copyClick]);
+  }, [TUPCID, copyClick]);
 
   const generate = () => {
     const randoms = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -95,10 +101,10 @@ function Sections({ setClicked, clicked }) {
     }
     setUid(generated);
   };
+
   const handleclick = () => {
     setClicked(!clicked);
   };
-
   return (
     <main className="w-100 min-vh-100 overflow-auto">
       <section className="contatiner col-12 text-sm-start text-center d-flex flex-column align-items-start p-2">
@@ -180,7 +186,7 @@ function Sections({ setClicked, clicked }) {
                         name="Year"
                         id="Year"
                         className="py-1 px-3 rounded border border-dark col-4"
-                      >
+                      > <option value="">{initialOption}</option>
                         <option value="1ST">1ST</option>
                         <option value="2ND">2ND</option>
                         <option value="3RD">3RD</option>
@@ -192,7 +198,7 @@ function Sections({ setClicked, clicked }) {
                         name="Course"
                         id="Course"
                         className="py-1 px-3 rounded border border-dark col-4"
-                      >
+                      ><option value="">{initialOption}</option>
                         <option value="BSCE">BSCE</option>
                         <option value="BSEE">BSEE</option>
                         <option value="BSME">BSME</option>
@@ -215,7 +221,7 @@ function Sections({ setClicked, clicked }) {
                         name="Section"
                         id="Section"
                         className="py-1 px-3 rounded border border-dark col-3"
-                      >
+                      ><option value="">{initialOption}</option>
                         <option value="A">A</option>
                         <option value="B">B</option>
                         <option value="C">C</option>
