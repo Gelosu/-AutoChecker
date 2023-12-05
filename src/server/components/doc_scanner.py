@@ -2,17 +2,23 @@ import cv2
 import os
 import imutils
 from imutils.perspective import four_point_transform
-from skimage.filters import threshold_local
+import numpy as np
 
 def document_scanner(image, upload_folder):
-    ratio = image.shape[0] / 500.0
+
+    image = imutils.resize(image, height=image.shape[0])
+    ratio = image.shape[0] / image.shape[0]
     orig = image.copy()
-    image = imutils.resize(image, height=500)
 
-    # PAPER SCANNER
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    kernel = np.ones((7,7),np.uint8)
+    img = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel, iterations=3)
+    img_filename = os.path.join(upload_folder, 'image2.0_morph.jpg')
+    cv2.imwrite(img_filename, img)
 
-    edged = cv2.Canny(gray, 75, 200)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (11, 11), 0)
+    edged = cv2.Canny(gray, 0, 200)
+    edged = cv2.dilate(edged, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
     edged_filename = os.path.join(upload_folder, 'image2.1_edged.jpg')
     cv2.imwrite(edged_filename, edged)
 
@@ -23,10 +29,12 @@ def document_scanner(image, upload_folder):
     cv2.imwrite(threshold_filename, threshold)
 
     # find the contours in the edged image, keeping only the largest ones, and initialize the screen contour
-    cnts = cv2.findContours(edged, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    cnts = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnts = imutils.grab_contours(cnts)
     cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:5]
 
+    screenCnt = None  # Initialize screenCnt to None
+
     for c in cnts:
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
@@ -35,33 +43,31 @@ def document_scanner(image, upload_folder):
             screenCnt = approx
             break
 
-    if len(approx) != 4:
-        cnts = cv2.findContours(threshold, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    if screenCnt is None:  # If screenCnt is not found, try using contours in the threshold image
+        cnts = cv2.findContours(threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cnts = imutils.grab_contours(cnts)
         cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:5]
 
-    for c in cnts:
-        peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+        for c in cnts:
+            peri = cv2.arcLength(c, True)
+            approx = cv2.approxPolyDP(c, 0.02 * peri, True)
 
-        if len(approx) == 4:
-            screenCnt = approx
-            break
+            if len(approx) == 4:
+                screenCnt = approx
+                break
 
-    cv2.drawContours(image, [screenCnt], -1, (0, 255, 0), 2)
-    cnts_filename = os.path.join(upload_folder, 'image3_cnts.jpg')
-    cv2.imwrite(cnts_filename, image)
+    if screenCnt is not None:
+        cv2.drawContours(image, [screenCnt], -1, (0, 255, 0), 2)
+        cnts_filename = os.path.join(upload_folder, 'image3_cnts.jpg')
+        cv2.imwrite(cnts_filename, image)
 
-    # Apply four-point perspective transform to the original image
-    warped = four_point_transform(orig, screenCnt.reshape(4, 2) * ratio)
-    warped_filename = os.path.join(upload_folder, 'image4_warped.jpg')
-    cv2.imwrite(warped_filename, warped)
+        # Apply four-point perspective transform to the original image
+        warped = four_point_transform(orig, screenCnt.reshape(4, 2) * ratio)
+        margin = 10
+        warped_cropped = warped[margin:-margin, margin:-margin]
+        warped_filename = os.path.join(upload_folder, 'image4_warped.jpg')
+        cv2.imwrite(warped_filename, warped_cropped)
 
-    margin = 25  # You can adjust this value to control the amount of cropping
-    height, width = warped.shape[:2]
-    cropped = warped[margin:height - margin, margin:width - margin]
-    # Save the cropped and transformed image
-    cropped_filename = os.path.join(upload_folder, 'image5_cropped.jpg')
-    cv2.imwrite(cropped_filename, cropped)
-
-    return cropped_filename
+        return warped_filename
+    else:
+        return None  # Return None if screenCnt is not found

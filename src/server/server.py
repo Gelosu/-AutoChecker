@@ -3,72 +3,115 @@ from flask_cors import CORS
 import os
 import cv2
 from components.doc_scanner import document_scanner 
-from components.type_scanner import type_scanner
-from components.preprocess0 import preprocess0
-from components.preprocess1_3 import preprocess1_3
-
-import numpy as np
-from skimage.filters import threshold_local
-
+from components.box_scanner import box_scanner
+from components.preprocess import preprocess0
 app = Flask(__name__)
 CORS(app)
 
-UPLOAD_FOLDER = 'uploads'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+UPLOAD_FOLDER = 'uploads1'
+app.config['UPLOAD_FOLDER1'] = UPLOAD_FOLDER
 
-@app.route('/post-image', methods=['POST'])
-def post_image():
+UPLOAD_FOLDER = 'uploads2'
+app.config['UPLOAD_FOLDER2'] = UPLOAD_FOLDER
+
+UPLOAD_FOLDER = 'uploads3'
+app.config['UPLOAD_FOLDER3'] = UPLOAD_FOLDER
+
+@app.route('/post-test1', methods=['POST'])
+def post_image1():
     if 'image' not in request.files:
         return jsonify({'error': 'No image part'})
     
     image = request.files['image']
     if image.filename == '':
         return jsonify({'error': 'No selected image'})
-
+    
     if image:
-        filename = os.path.join(app.config['UPLOAD_FOLDER'], 'image1_original.jpg')
+        filename = os.path.join(app.config['UPLOAD_FOLDER1'], 'image1_original.jpg')
         image.save(filename)
         image = cv2.imread(filename)
 
-        #auto crop and transform
-        cropped_filename = document_scanner(image, app.config['UPLOAD_FOLDER'])
+        cropped_filename = document_scanner(image, app.config['UPLOAD_FOLDER1'])
         image = cv2.imread(cropped_filename)
+        cropped_filename2 = box_scanner(image, app.config['UPLOAD_FOLDER1'])
+        image = cv2.imread(cropped_filename2)
+        # Preprocess
+        preprocess0(image, app.config['UPLOAD_FOLDER1'], app)
 
-        # Type scanner
-        type_images = type_scanner(image, app.config['UPLOAD_FOLDER'])
-        for i in range(4):
-            type_filename = os.path.join(app.config['UPLOAD_FOLDER'], f'type_{i}_image.jpg')
-            if os.path.exists(type_filename):
-                type_image = cv2.imread(type_filename)
+        return jsonify({'message': 'Image uploaded successfully'})
 
-                # Preprocess
-                if i == 0:
-                    preprocess0(type_image, i, app.config['UPLOAD_FOLDER'], app)
-                    
-                else:
-                    preprocess1_3(type_image, i, app.config['UPLOAD_FOLDER'], app)
-                
-        return jsonify({'message': 'Image uploaded, scanned, and preprocessed successfully'})
+@app.route('/get-test1', methods=['GET'])
+def get_image1():
+    processed_image_path = os.path.join(app.config['UPLOAD_FOLDER1'], 'image14cropped.jpg')
 
-@app.route('/get-image', methods=['GET'])
-def get_image():
-    image_index = request.args.get('index', type=int, default=0)  # Get the 'index' query parameter with a default value of 0
-    if image_index < 0 or image_index > 3:
-        return jsonify({'error': 'Invalid image index'})
+    if not os.path.exists(processed_image_path):
+        return jsonify({'error': 'Processed image not found'})
 
-    image_filenames = [
-        'type_0_image1grayscale.jpg',
-        'type_1_image6closing.jpg',
-        'type_2_image6closing.jpg',
-        'type_3_image6closing.jpg'
-    ]
-    image_filename = os.path.join(app.config['UPLOAD_FOLDER'], image_filenames[image_index])
+    return send_file(processed_image_path, as_attachment=True)
+
+@app.route('/post-test2', methods=['POST'])
+def post_image2():
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image part'})
     
+    image = request.files['image']
+    if image.filename == '':
+        return jsonify({'error': 'No selected image'})
+    
+    if image:
+        filename = os.path.join(app.config['UPLOAD_FOLDER2'], 'image1_original.jpg')
+        image.save(filename)
+        image = cv2.imread(filename)
 
-    if not os.path.exists(image_filename):
-        return jsonify({'error': 'Image not found'})
+        cropped_filename = document_scanner(image, app.config['UPLOAD_FOLDER2'])
+        image = cv2.imread(cropped_filename)
+        cropped_filename2 = box_scanner(image, app.config['UPLOAD_FOLDER2'])
+        image = cv2.imread(cropped_filename2)
+        # Preprocess
+        preprocess0(image, app.config['UPLOAD_FOLDER2'], app)
 
-    return send_file(image_filename, as_attachment=True)
+        return jsonify({'message': 'Image uploaded successfully'})
+
+@app.route('/get-test2', methods=['GET'])
+def get_image2():
+    processed_image_path = os.path.join(app.config['UPLOAD_FOLDER2'], 'image14cropped.jpg')
+
+    if not os.path.exists(processed_image_path):
+        return jsonify({'error': 'Processed image not found'})
+
+    return send_file(processed_image_path, as_attachment=True)
+
+@app.route('/post-test3', methods=['POST'])
+def post_image3():
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image part'})
+    
+    image = request.files['image']
+    if image.filename == '':
+        return jsonify({'error': 'No selected image'})
+    
+    if image:
+        filename = os.path.join(app.config['UPLOAD_FOLDER3'], 'image1_original.jpg')
+        image.save(filename)
+        image = cv2.imread(filename)
+
+        cropped_filename = document_scanner(image, app.config['UPLOAD_FOLDER3'])
+        image = cv2.imread(cropped_filename)
+        cropped_filename2 = box_scanner(image, app.config['UPLOAD_FOLDER3'])
+        image = cv2.imread(cropped_filename2)
+        # Preprocess
+        preprocess0(image, app.config['UPLOAD_FOLDER3'], app)
+
+        return jsonify({'message': 'Image uploaded successfully'})
+
+@app.route('/get-test3', methods=['GET'])
+def get_image3():
+    processed_image_path = os.path.join(app.config['UPLOAD_FOLDER3'], 'image14cropped.jpg')
+
+    if not os.path.exists(processed_image_path):
+        return jsonify({'error': 'Processed image not found'})
+
+    return send_file(processed_image_path, as_attachment=True)
 
 if __name__ == '__main__':
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
