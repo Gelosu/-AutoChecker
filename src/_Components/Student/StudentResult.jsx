@@ -39,7 +39,7 @@ function StudentResult({ clicked, setClicked }) {
       const response = await axios.get(
         `http://localhost:3001/Studentname2/${studentid}`
       );
-      setTUPCID(response.data.TUPCID); // Set TUPCID from the API response
+      setTUPCID(response.data.TUPCID); 
     } catch (err) {
       console.error(err);
     }
@@ -63,7 +63,7 @@ function StudentResult({ clicked, setClicked }) {
           setTotalScore(TOTALSCORE || 0);
           setMaxScore(MAXSCORE || 0);
         }
-      } else {
+      } else {x``
         console.error("Failed to fetch student scores");
       }
     } catch (error) {
@@ -126,62 +126,45 @@ function StudentResult({ clicked, setClicked }) {
 
   const fetchStudentAnswers = async () => {
     try {
-      let dataAvailable = false;
-
-      while (!dataAvailable) {
-        const response = await axios.get(
-          `http://localhost:3001/getstudentanswers/${TUPCID}/${uid}`
-        );
-
-        if (response.status === 200) {
-          const {
-            testType: fetchedTestType,
-            questionNumbers,
-            questionTypes,
-            answers,
-          } = response.data;
-
-          const filteredData = questionTypes.reduce((acc, type, index) => {
-            if (type && answers[index]) {
-              const questionNumber = questionNumbers[index];
-              const answer = answers[index];
-            
-              
-              if (!acc[type]) {
-                acc[type] = [];
-              }
-              acc[type].push({ questionNumber, answer});
-            }
-            return acc;
-          }, {});
-
-          const organizedDataArray2 = Object.entries(filteredData).map(
-            ([type, data]) => ({
+      const response = await axios.get(
+        `http://localhost:3001/getstudentanswers?TUPCID=${TUPCID}&UID=${uid}`
+      );
+  
+      if (response.status === 200) {
+        const { studentAnswers } = response.data;
+        const organizedDataArray2 = studentAnswers.TESTTYPE.map((type, typeIndex) => {
+          // Check if results array is available for the current type
+          if (studentAnswers.results && studentAnswers.results[typeIndex]) {
+            return {
               type,
-              answers: data,
-            })
-          );
-
-          setStudentAnswerData(organizedDataArray2);
-          setTestType(fetchedTestType || "No Test Paper Created Yet");
-          dataAvailable = true;
-        } else {
-          console.error("Error fetching student answers");
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+              answers: studentAnswers.results[typeIndex].map((answer, index) => ({
+                questionNumber: index ,
+                answer,
+              })),
+            };
+          }
+          return {
+            type,
+            answers: [], // If no results are available, set answers to an empty array
+          };
+        });
+  
+        setStudentAnswerData(organizedDataArray2);
+      } else {
+        console.error("Error fetching student answers");
       }
     } catch (error) {
       console.error("Error fetching student answers:", error);
     }
   };
-
-
+  
+  
   useEffect(() => {
     if (TUPCID && uid) {
       fetchStudentAnswers();
     }
   }, [TUPCID, uid]);
+
 
 
   
@@ -193,30 +176,7 @@ useEffect(() => {
   }
 }, [uid]);
 
-const renderAnswerKeyAndStudentAnswers = (type) => {
-  const relevantTestData = testData.find((data) => data.type === type);
-  const relevantStudentAnswerData = studentAnswerData.find(
-    (data) => data.type === type
-  );
 
-  if (relevantTestData && relevantStudentAnswerData) {
-    return (
-      <>
-        <td>
-          {relevantTestData.questions.map((question, index) => (
-            <div key={index}>{`${question.questionNumber}. ${question.answer}`}</div>
-          ))}
-        </td>
-        <td>
-          {relevantStudentAnswerData.answers.map((answer, idx) => (
-            <div key={idx}>{`${answer.questionNumber}. ${answer.answer}`}</div>
-          ))}
-        </td>
-      </>
-    );
-  }
-  return null;
-};
 
   return (
     <main className="w-100 min-vh-100">
@@ -247,13 +207,41 @@ const renderAnswerKeyAndStudentAnswers = (type) => {
               </tr>
             </thead>
             <tbody>
-              {studentAnswerData.map((answerData, index) => (
-                <tr key={index} className="text-center">
-                  <td>{answerData.type}</td>
-                  {renderAnswerKeyAndStudentAnswers(answerData.type)}
-                </tr>
-              ))}
-            </tbody>
+  {testData.map((testSection, index) => (
+    <tr key={index}>
+      <td>{testSection.type}</td>
+      <td>
+        <ol>
+          {testSection.questions.map((question, qIndex) => (
+            <li key={qIndex}>
+              {`${question.answer}`}
+            </li>
+          ))}
+        </ol>
+      </td>
+      <td>
+        
+          {studentAnswerData.map((answerSection, aIndex) => {
+            if (answerSection.type === testSection.type) {
+              return (
+                <div  key={aIndex}>
+                  <ol>
+                    {answerSection.answers.map((answer, answerIndex) => (
+                      <li key={answerIndex}>{`${answer.answer}`}</li>
+                    ))}
+                  </ol>
+                </div>
+              );
+            }
+            
+          })}
+        
+      </td>
+    </tr>
+  ))}
+</tbody>
+
+
           </table>
         </div>
       </section>

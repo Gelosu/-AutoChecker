@@ -173,7 +173,7 @@ function ListOfTest({ setClicked, clicked }) {
   }, [TUPCID, sorted, Uidtest]);
 
   const generate = () => {
-    const randoms = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const randoms = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     var generated = "";
     for (let i = 0; i < 5; i++) {
       const generating = randoms[Math.floor(Math.random() * randoms.length)];

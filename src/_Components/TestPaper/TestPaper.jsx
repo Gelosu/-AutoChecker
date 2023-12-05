@@ -76,7 +76,6 @@ export default function TestPaper() {
   };
 
   const handleSaveToDocsAndPDF = () => {
-    const localStorageKey = `testPaperData_${TUPCID}_${sectionname}_${uid}`;
     const savedData = JSON.parse(localStorage.getItem(localStorageKey) || "[]");
 
     generateTestPaperdoc(savedData);
@@ -117,7 +116,7 @@ export default function TestPaper() {
         setFields(JSON.parse(savedData));
         setLoadedFromLocalStorage(true);
       }
-    }, [localStorageKey]);
+    }, []);
 
     // Modified code to save and retrieve fieldTitleNumbers
     const [fieldTitleNumbers, setFieldTitleNumbers] = useState(() => {
@@ -148,24 +147,19 @@ export default function TestPaper() {
     useEffect(() => {
       if (!fieldTitleNumbers && !fieldQuestionNumbers) return;
       localStorage.setItem(localStorageKey2, JSON.stringify(fieldTitleNumbers));
-      localStorage.setItem(
-        localStorageKey3,
-        JSON.stringify(fieldQuestionNumbers)
-      );
+      localStorage.setItem(localStorageKey3, JSON.stringify(fieldQuestionNumbers));
     }, [fieldTitleNumbers, fieldQuestionNumbers]);
 
     const maxScoreFromLocalStorage = localStorage.getItem(localStorageKey4);
 
-    // Initialize `maxScore` with the value from local storage or the default value (10)
     const [maxScore, setMaxScore] = useState(
       maxScoreFromLocalStorage ? parseInt(maxScoreFromLocalStorage) : 10
     );
 
-    // Update the `maxScore` state and save it to local storage when it changes
     const handleMaxScore = (event) => {
       let value = event.target.value;
       value = value.replace(/[^0-9]/g, "");
-      value = Math.min(Math.max(1, parseInt(value) || 1), 100);
+      value = Math.min(Math.max(0, parseInt(value) || 0), 100);
 
       setMaxScore(value);
 
@@ -176,7 +170,6 @@ export default function TestPaper() {
     const [totalScore, setTotalScore] = useState(0);
     const [scoreDifference, setScoreDifference] = useState(0);
 
-    // Function to calculate and update the total score
     const updateTotalScore = () => {
       const newTotalScore = fields.reduce((acc, field) => {
         const originalScore = parseInt(field.score) || 0;
@@ -189,16 +182,17 @@ export default function TestPaper() {
         return acc + originalScore + copiedScore;
       }, 0);
 
-      // Calculate the score difference and update the state
       const newScoreDifference = maxScore - newTotalScore;
       setScoreDifference(newScoreDifference);
       setTotalScore(newTotalScore);
     };
 
     useEffect(() => {
-      // Update the total score whenever the fields change
       updateTotalScore();
     }, [maxScore, fields]);
+    
+
+
 
     const addNewField = () => {
       if (fieldTitleNumbers.length > 2) {
@@ -241,7 +235,6 @@ export default function TestPaper() {
       ]);
 
       updateTotalScore();
-
       setFieldTitleNumbers((prevNumbers) => [...prevNumbers, newFieldNumber]);
       setFieldQuestionNumbers((prevNumbers) => [...prevNumbers, 1]);
     };
@@ -261,19 +254,14 @@ export default function TestPaper() {
     const handleFieldChange = (index, field) => {
       const updatedFields = [...fields];
 
-      // Ensure the score is at least 1
       const score = Math.min(Math.max(1, parseInt(field.score) || 1), 10);
       updatedFields[index] = { ...field, score: score };
 
       if (field.questionType && field.questionType.value === "TrueFalse") {
         updatedFields[index].answer = field.answer;
-      } else if (
-        field.questionType &&
-        field.questionType.value === "MultipleChoice"
-      ) {
+      } else if (field.questionType && field.questionType.value === "MultipleChoice") {
         updatedFields[index].answer = field.answer;
 
-        // Update the answer for each option
         updatedFields[index].MCOptions.forEach((option, optionIndex) => {
           if (option.label === field.answer) {
             option.text = field.MCOptions[optionIndex].text;
@@ -283,14 +271,11 @@ export default function TestPaper() {
         updatedFields[index].answer = field.answer;
       }
 
-      // Update the score for copied fields when changing the score in the original field
       updatedFields[index].copiedFields.forEach((copiedField) => {
         copiedField.score = score;
       });
 
       setFields(updatedFields);
-
-      // Calculate the current score
       updateTotalScore();
       setSaveButtonDisabled(false);
     };
@@ -307,11 +292,7 @@ export default function TestPaper() {
           );
           updatedFields[index].MCOptions.push({ label: newOption, text: "" });
           setFields(updatedFields);
-        } else {
-          console.error(
-            "Cannot add more options. Maximum of 5 options allowed."
-          );
-        }
+        } 
       } else {
         if (!updatedFields[index].copiedFields[copiedIndex].MCOptions) {
           updatedFields[index].copiedFields[copiedIndex].MCOptions = [];
@@ -327,10 +308,6 @@ export default function TestPaper() {
             text: "",
           });
           setFields(updatedFields);
-        } else {
-          console.error(
-            "Cannot add more options. Maximum of 5 options allowed."
-          );
         }
       }
     };
@@ -341,11 +318,7 @@ export default function TestPaper() {
       if (copiedIndex === undefined) {
         if (updatedFields[index].MCOptions.length > 3) {
           updatedFields[index].MCOptions.pop();
-        } else {
-          console.error(
-            "Cannot subtract option. Minimum of 3 options required."
-          );
-        }
+        } 
       } else if (
         updatedFields[index].copiedFields &&
         updatedFields[index].copiedFields[copiedIndex].MCOptions
@@ -354,11 +327,7 @@ export default function TestPaper() {
           updatedFields[index].copiedFields[copiedIndex].MCOptions.length > 3
         ) {
           updatedFields[index].copiedFields[copiedIndex].MCOptions.pop();
-        } else {
-          console.error(
-            "Cannot subtract option. Minimum of 3 options required."
-          );
-        }
+        } 
       }
       setFields(updatedFields);
     };
@@ -395,13 +364,12 @@ export default function TestPaper() {
     const handleCopyField = (index, copiedIndex) => {
       const updatedFields = [...fields];
       const copiedField = {
-        ...fields[index], // Copy properties from the original field
-        question: "", // Reset the question for the copied field
-        answer: "", // Reset the answer for the copied field
+        ...fields[index], 
+        question: "", 
+        answer: "", 
         copiedFields: [],
       };
 
-      // If the question type is "MultipleChoice," initialize MCOptions with default choices
       if (copiedField.questionType.value === "MultipleChoice") {
         copiedField.MCOptions = [
           { label: "A", text: "" },
@@ -412,93 +380,69 @@ export default function TestPaper() {
       }
 
       if (updatedFields[index].copiedFields.length >= 19) {
-        setErrorMessage(
-          "You've reach the maximum number in this question type"
-        );
+        return;
       }
+
       if (!updatedFields[index].copiedFields) {
         updatedFields[index].copiedFields = [];
       }
       updatedFields[index].copiedFields.splice(copiedIndex + 1, 0, copiedField);
 
       setFields(updatedFields);
-
-      // Update the total score when copying an empty field
       updateTotalScore();
     };
 
     const shuffleArray = (array) => {
-      const shuffledArray = [...array];
-      for (let i = shuffledArray.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffledArray[i], shuffledArray[j]] = [
-          shuffledArray[j],
-          shuffledArray[i],
-        ];
-      }
-      return shuffledArray;
-    };
-
+    const shuffledArray = [...array];
+    for (let i = shuffledArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]];
+    }
+    return shuffledArray;
+  };
+    
     const handleCopyFieldData = (index, copiedIndex) => {
-      const updatedFields = [...fields];
+  const updatedFields = [...fields];
 
-      if (!updatedFields[index].copiedFields) {
-        updatedFields[index].copiedFields = [];
-      }
+  if (updatedFields[index].copiedFields?.length >= 19) {
+    return;
+  }
 
-      const sourceQuestion =
-        copiedIndex === undefined
-          ? updatedFields[index]
-          : updatedFields[index].copiedFields[copiedIndex];
+  updatedFields[index].copiedFields = updatedFields[index].copiedFields || [];
 
-      const originalLabels = sourceQuestion.MCOptions.map(
-        (option) => option.label
-      );
-      const shuffledLabels = shuffleArray(originalLabels);
+  const sourceQuestion = copiedIndex === undefined
+    ? updatedFields[index]
+    : updatedFields[index].copiedFields[copiedIndex];
 
-      // Ensure the shuffled labels are different from the original order
-      while (shuffledLabels.every((label, i) => label === originalLabels[i])) {
-        shuffleArray(shuffledLabels);
-      }
+  const originalLabels = sourceQuestion.MCOptions.map(option => option.label);
+  const shuffledLabels = shuffleArray(originalLabels);
 
-      // Create a new set of MCOptions with shuffled text but original labels
-      const shuffledMCOptions = sourceQuestion.MCOptions.map(
-        (option, optionIndex) => ({
-          label: option.label,
-          text: sourceQuestion.MCOptions.find(
-            (originalOption) =>
-              originalOption.label === shuffledLabels[optionIndex]
-          ).text,
-        })
-      );
+  while (shuffledLabels.every((label, i) => label === originalLabels[i])) {
+    shuffleArray(shuffledLabels);
+  }
 
-      const copiedData = {
-        questionType: sourceQuestion.questionType,
-        question: sourceQuestion.question,
-        answer: sourceQuestion.answer,
-        score: sourceQuestion.score,
-        MCOptions: shuffledMCOptions,
-        TFOptions: sourceQuestion.TFOptions.map((option) => ({ ...option })), // Deep copy TFOptions
-      };
+  const shuffledMCOptions = sourceQuestion.MCOptions.map((option, optionIndex) => ({
+    label: option.label,
+    text: sourceQuestion.MCOptions.find(originalOption => originalOption.label === shuffledLabels[optionIndex]).text,
+  }));
 
-      if (updatedFields[index].copiedFields.length >= 19) {
-        setErrorMessage(
-          "You've reach the maximum number in this question type"
-        );
-        return;
-      }
-      if (copiedIndex === undefined) {
-        updatedFields[index].copiedFields.splice(index, 0, copiedData);
-      } else {
-        updatedFields[index].copiedFields.splice(
-          copiedIndex + 1,
-          0,
-          copiedData
-        );
-      }
+  const copiedData = {
+    questionType: sourceQuestion.questionType,
+    question: sourceQuestion.question,
+    answer: sourceQuestion.answer,
+    score: sourceQuestion.score,
+    MCOptions: shuffledMCOptions,
+    TFOptions: sourceQuestion.TFOptions.map(option => ({ ...option })), // Deep copy TFOptions
+  };
 
-      setFields(updatedFields);
-    };
+  if (copiedIndex === undefined) {
+    updatedFields[index].copiedFields.splice(index, 0, copiedData);
+  } else {
+    updatedFields[index].copiedFields.splice(copiedIndex + 1, 0, copiedData);
+  }
+
+  setFields(updatedFields);
+};
 
     const handleReset = (index, copiedIndex) => {
       const updatedFields = [...fields];
@@ -509,7 +453,7 @@ export default function TestPaper() {
           answer: "",
           MCOptions: fields[index].MCOptions.map((option) => ({
             ...option,
-            text: "", // Reset text for MultipleChoice options
+            text: "", 
           })),
         };
       } else {
@@ -520,7 +464,7 @@ export default function TestPaper() {
           MCOptions: fields[index].copiedFields[copiedIndex].MCOptions.map(
             (option) => ({
               ...option,
-              text: "", // Reset text for MultipleChoice options
+              text: "", 
             })
           ),
         };
@@ -532,7 +476,6 @@ export default function TestPaper() {
       const updatedFields = [...fields];
       updatedFields[fieldIndex].copiedFields.splice(copiedIndex, 1);
       setFields(updatedFields);
-      setErrorMessage("");
     };
 
     const handleRemoveField = (index) => {
@@ -540,13 +483,9 @@ export default function TestPaper() {
       updatedFields.splice(index, 1);
 
       // Update the TYPE numbers for the remaining fields
-      const updatedFieldTitleNumbers = updatedFields.map(
-        (field, i) => fieldTitleNumbers[i]
-      );
-      const updatedFieldQuestionNumbers = updatedFields.map(
-        (field, i) => fieldQuestionNumbers[i]
-      );
-
+      const updatedFieldTitleNumbers = updatedFields.map((field, i) => fieldTitleNumbers[i]);
+      const updatedFieldQuestionNumbers = updatedFields.map((field, i) => fieldQuestionNumbers[i]);
+  
       setFields(updatedFields);
       setFieldTitleNumbers(updatedFieldTitleNumbers);
       setFieldQuestionNumbers(updatedFieldQuestionNumbers);
@@ -572,8 +511,6 @@ export default function TestPaper() {
     };
 
     const handleSave = async () => {
-      const localStorageKey = `testPaperData_${TUPCID}_${sectionname}_${uid}`;
-
       const savedData = JSON.parse(
         localStorage.getItem(localStorageKey) || "[]"
       );
@@ -825,10 +762,7 @@ export default function TestPaper() {
                 placeholder="Question"
                 value={field.question}
                 onChange={(e) =>
-                  handleFieldChange(index, {
-                    ...field,
-                    question: e.target.value,
-                  })
+                  handleFieldChange(index, { ...field, question: e.target.value })
                 }
               />
             </div>
@@ -843,10 +777,7 @@ export default function TestPaper() {
                         value={option.label}
                         checked={field.answer === option.label}
                         onChange={(e) =>
-                          handleFieldChange(index, {
-                            ...field,
-                            answer: e.target.value,
-                          })
+                          handleFieldChange(index, {...field, answer: e.target.value,})
                         }
                       />
                       {option.label}
@@ -865,10 +796,7 @@ export default function TestPaper() {
                         value={option.label}
                         checked={field.answer === option.label}
                         onChange={(e) =>
-                          handleFieldChange(index, {
-                            ...field,
-                            answer: e.target.value,
-                          })
+                          handleFieldChange(index, {...field, answer: e.target.value,})
                         }
                       />
                       {option.label}
@@ -879,11 +807,7 @@ export default function TestPaper() {
                       placeholder="Enter text"
                       value={option.text}
                       onChange={(e) =>
-                        handleOptionTextChange(
-                          index,
-                          optionIndex,
-                          e.target.value
-                        )
+                        handleOptionTextChange(index, optionIndex, e.target.value)
                       }
                     />
                   </div>
@@ -912,10 +836,7 @@ export default function TestPaper() {
                   placeholder="Answer"
                   value={field.answer}
                   onChange={(e) =>
-                    handleFieldChange(index, {
-                      ...field,
-                      answer: e.target.value,
-                    })
+                    handleFieldChange(index, {...field, answer: e.target.value,})
                   }
                 />
               </div>
@@ -927,9 +848,11 @@ export default function TestPaper() {
               >
                 <i className="bi bi-arrow-repeat"></i>
               </button>
+              
               <button
                 className="btn btn-outline-dark btn-sm"
                 onClick={() => handleCopyFieldData(index)}
+                disabled={scoreDifference <= 0}
               >
                 Copy
               </button>
@@ -1045,9 +968,7 @@ export default function TestPaper() {
                           </button>
                           <button
                             className="btn btn-outline-dark btn-sm"
-                            onClick={() =>
-                              subtractRadioOption(index, copiedIndex)
-                            }
+                            onClick={() =>subtractRadioOption(index, copiedIndex)}
                           >
                             - Option
                           </button>
@@ -1063,11 +984,10 @@ export default function TestPaper() {
                           onChange={(e) =>
                             handleFieldChange(index, {
                               ...field,
-                              copiedFields: field.copiedFields.map(
-                                (cf, cIndex) =>
-                                  cIndex === copiedIndex
-                                    ? { ...cf, answer: e.target.value }
-                                    : cf
+                              copiedFields: field.copiedFields.map((cf, cIndex) =>
+                                cIndex === copiedIndex
+                                  ? { ...cf, answer: e.target.value }
+                                  : cf
                               ),
                             })
                           }
@@ -1079,14 +999,12 @@ export default function TestPaper() {
                         className="btn btn-outline-dark btn-sm"
                         onClick={() => handleReset(index, copiedIndex)}
                       >
-                        <i class="bi bi-arrow-repeat"></i>
+                        <i className="bi bi-arrow-repeat"></i>
                       </button>
 
                       <button
                         className="btn btn-outline-dark btn-sm"
-                        onClick={() =>
-                          handleRemoveCopiedField(index, copiedIndex)
-                        }
+                        onClick={() => handleRemoveCopiedField(index, copiedIndex)}
                       >
                         <span className="p-2">-</span>
                       </button>

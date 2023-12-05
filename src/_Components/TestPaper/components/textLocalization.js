@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { createWorker } from 'tesseract.js';
 
-function TextLocalization({ imageData }) {
+function TextLocalization({ imageData, onTextExtracted}) {
   const [localizedImageData, setLocalizedImageData] = useState(null);
   const [localizedImageWithBoxes, setLocalizedImageWithBoxes] = useState(null);
+  const [extractedTextArray, setExtractedTextArray] = useState([]);
 
   useEffect(() => {
     if (imageData) {
@@ -11,41 +12,41 @@ function TextLocalization({ imageData }) {
     }
   }, [imageData]);
 
+  useEffect(() => {
+    if (extractedTextArray.length > 0) {
+      // Pass the extracted text array to the parent component
+      onTextExtracted(extractedTextArray);
+    }
+  }, [extractedTextArray, onTextExtracted]);
+  
   const localizeText = async (imageData) => {
-    // Load the original image as an HTMLImageElement
     const originalImage = new Image();
     originalImage.src = imageData;
 
     originalImage.onload = async () => {
       const worker = await createWorker();
-      
-      // Set additional parameters for Tesseract
-      worker.setParameters({
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,. ) ',
-      });
 
       try {
-        const { data } = await worker.recognize(originalImage);
+        const { data: allData } = await worker.recognize(originalImage);
 
-        // Create a new canvas to draw the image
+         // Split the recognized text into an array using new lines and filter out empty strings
+      const extractedTextArray = allData.text.split('\n').filter((text) => text.trim() !== '').map((text) => {
+        return /[a-z]/.test(text) ? text.toUpperCase() : text;
+      });
+
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
 
-        // Set canvas dimensions to match the image
         canvas.width = originalImage.width;
         canvas.height = originalImage.height;
 
-        // Draw the original image on the canvas
         context.drawImage(originalImage, 0, 0);
-
-        // Draw red boxes around words and display red text above each box
-        context.strokeStyle = 'green';
-        context.fillStyle = 'red';
+        context.strokeStyle = 'blue';
+        context.fillStyle = 'orange';
         context.lineWidth = 1;
         context.font = '16px Arial';
 
-        data.words.forEach((word) => {
-          // Draw the red box
+        allData.words.forEach((word) => {
           context.strokeRect(
             word.bbox.x0,
             word.bbox.y0,
@@ -53,15 +54,17 @@ function TextLocalization({ imageData }) {
             word.bbox.y1 - word.bbox.y0
           );
 
-          // Display red text above the box
-          context.fillText(word.text, word.bbox.x0, word.bbox.y0 - 5);
+          const displayText = word.text.length > 0 ? word.text : '?';
+          context.fillText(displayText, word.bbox.x0 + 20, word.bbox.y0 - 5);
         });
 
-        // Convert canvas to base64 image data
         const imageWithBoxes = canvas.toDataURL('image/jpeg');
 
-        setLocalizedImageData(data.text);
+        setLocalizedImageData({
+          allText: allData.text.toUpperCase(),
+        });
         setLocalizedImageWithBoxes(imageWithBoxes);
+        setExtractedTextArray(extractedTextArray);
       } catch (error) {
         console.error('Error recognizing text:', error);
       } finally {
@@ -74,12 +77,19 @@ function TextLocalization({ imageData }) {
     <div>
       {localizedImageData && (
         <div>
-          <h2>Localized Image:</h2>
           <img
             src={localizedImageWithBoxes}
             alt="Localized"
             style={{ maxWidth: '100%' }}
           />
+          <div>
+            <h3>All Extracted Text:</h3>
+            <ul>
+              {extractedTextArray.map((text, index) => (
+                <li key={index}>{text}</li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
     </div>
