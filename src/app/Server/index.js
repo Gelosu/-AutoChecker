@@ -575,11 +575,11 @@ app.get("/TestListSectionName", async (req, res) => {
 
 //Checking TestName
 app.get("/CheckTestName", async (req, res) => {
-  const { TestName } = req.query;
+  const { TestName, Subject, SectionName, Semester} = req.query;
   try {
     const query =
-      "SELECT COUNT(*) as count FROM faculty_testlist WHERE TestName = ?";
-    const [count] = await connection.query(query, [TestName]);
+      "SELECT COUNT(*) as count FROM faculty_testlist WHERE TestName = ? AND Subject = ? AND Section_Name = ? AND Semester = ? ";
+    const [count] = await connection.query(query, [TestName, Subject, SectionName, Semester]);
     console.log(count[0]);
     if (count[0].count > 0) {
       return res.status(409).send({ message: "Existing Testname" });
@@ -590,6 +590,7 @@ app.get("/CheckTestName", async (req, res) => {
     throw err;
   }
 });
+
 
 app.post("/TestList", async (req, res) => {
   const {
